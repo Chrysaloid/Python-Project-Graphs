@@ -1,0 +1,1 @@
+class NestedExit(Exception): pass
