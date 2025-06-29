@@ -3,13 +3,12 @@ from statistics import fmean, stdev
 
 from Graph import Graph
 
-
 graph = Graph([])
-graph.generateRandomGraph(200, maxConnections=10)
+graph.generateRandomGraph(200, maxConnections=(3,10))
 
 # for s in graph.getGraph():
 # 	print(s)
-def test(): return graph.findPath(0, 29)
+def test(): return graph.findPath(0, 29, Graph.PathFindingAlgorithms.BREADTH_FIRST_SEARCH)
 print(test())
 print(len(test()) == len(set(test())))
 

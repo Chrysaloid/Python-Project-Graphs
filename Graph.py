@@ -1,16 +1,25 @@
 ﻿import random
+import math
+from collections import deque
 
 # from codetiming import Timer
 
 from utils import NestedExit
+from PathFindingAlgorithms import PathFindingAlgorithms as PathAlgs
 
-random.seed(0)
+# random.seed(0)
 
 class	Graph:
+	PathFindingAlgorithms = PathAlgs
+
 	def __init__(self, graph: list | int = []):
 		self.graph = []
 
 		self._visited = []
+
+		self.multiEdge   = False
+		self.selfLoop    = False
+		self.directional = False
 
 		if isinstance(graph, int):
 			self.generateRandomGraph(graph)
@@ -22,15 +31,26 @@ class	Graph:
 		else:
 			raise TypeError("graph should be either list or int")
 
-	# def setGraph(self, graph):
-	# 	self.graph = graph
-
-	# def getGraph(self):
-	# 	return self.graph
-
 	@property
 	def len(self):
 		return len(self.graph)
+
+	@staticmethod
+	def simpleTraversePath(graph: "Graph", path: list[int]):
+		g = graph.graph
+		for i in range(len(path)-1):
+			if path[i+1] not in g[path[i]]:
+				print("Invalid path")
+				return False
+		print("Path OK")
+		return True
+
+	def print(self):
+		print("[")
+		field_size = math.floor(math.log10(self.len - 1)) + 1
+		for i in range(self.len):
+			print(" {i:{field_size}}: {neighbourhood}".format(i=i, field_size=field_size, neighbourhood=" ".join(map(str, self.graph[i]))))
+		print("]")
 
 	def _initVisited(self, val = False):
 		# self._visited = [val] * self.len
@@ -40,6 +60,29 @@ class	Graph:
 		else:
 			self._visited = [val] * self.len
 
+	def isConnected(self):
+		if not self.graph:
+			return True
+
+		if self.directional:
+			for neighbourhood in self.graph: # check for isolated nodes == with no neighbours
+				if not neighbourhood:
+					return False
+
+		self._initVisited()
+
+		queue = deque([0])
+		while len(queue):
+			current = queue.popleft()
+			for neighbour in self.graph[current]:
+				if self._visited[neighbour]:
+					continue
+				queue.append(neighbour)
+				self._visited[neighbour] = True
+
+		return all(self._visited)
+
+	"""
 	def isConnected(self):
 		if not self.graph:
 			return True
@@ -58,6 +101,7 @@ class	Graph:
 				continue
 			else:
 				self._isConnected(node)
+	"""
 
 	def generateRandomGraph(
 			self,
@@ -68,29 +112,36 @@ class	Graph:
 			selfLoop = False,
 			directional = False,
 		):
-		if not directional:
-			selfLoop = False
+		self.multiEdge   = multiEdge
+		self.selfLoop    = selfLoop
+		self.directional = directional
+
+		minConn = 1 if makeConnected else 0
 		if maxConnections is None:
-			minConn = 0
 			maxConn = numNodes
 		elif isinstance(maxConnections, int):
-			minConn = 0
 			maxConn = min(maxConnections, numNodes) if not multiEdge else maxConnections
 		else:
-			minConn = max(maxConnections(0), 0)
-			maxConn = min(maxConnections(1), numNodes) if not multiEdge else maxConnections
+			minConn = max(maxConnections[0], minConn)
+			maxConn = min(maxConnections[1], numNodes) if not multiEdge else maxConnections[1]
+
 		idxes = range(numNodes)
+		# attempts = 0
 		while True:
-			if multiEdge:
+			if multiEdge: # k is the node neighbourhood size
 				self.graph = [random.choices(idxes, k=random.randrange(minConn, maxConn)) for i in idxes]
 			else:
-				self.graph = [set(random.sample(idxes, random.randrange(minConn, maxConn))) for i in idxes]
+				self.graph = [set(random.sample(idxes, k=random.randrange(minConn, maxConn))) for i in idxes]
+			# attempts += 1
 			if not makeConnected or self.isConnected():
 				break
+		# print(attempts)
+
 		if not selfLoop:
 			listSet = list if multiEdge else set
 			for i in idxes:
 				self.graph[i] = listSet(filter(lambda x: x != i, self.graph[i]))
+
 		if not directional:
 			if multiEdge:
 				temp = [[]] * numNodes
@@ -105,40 +156,97 @@ class	Graph:
 						self.graph[node].add(i)
 
 	# @Timer(text = lambda sec: f"{sec * 1000:.1f} ms")
-	def findPath(self, start: int, end: int):
+	def findPath(
+			self,
+			start: int,
+			end: int,
+			algorithm: PathAlgs = PathAlgs.DEPTH_FIRST_SEARCH
+		) -> list[int]:
+		"""
+		Finds path between @start and @end nodes using specified algorithm.
+		If path is not found - empty list is returned.
+
+		args:
+			start (int): Start node
+			end (int): End node
+
+		return:
+			Path as list of node indices.
+		"""
 		if not isinstance(start, int):
 			raise TypeError("start should be an int.")
-		if not 0 <= start <= len(self.graph):
-			raise ValueError("start should be between 0 and len(self.graph).")
+		if not 0 <= start < self.len:
+			raise ValueError("start should be between 0 and graph.len exlusive.")
 		if not isinstance(end, int):
 			raise TypeError("end should be an int.")
-		if not 0 <= end <= len(self.graph):
-			raise ValueError("end should be between 0 and len(self.graph).")
+		if not 0 <= end < self.len:
+			raise ValueError("end should be between 0 and graph.len exlusive.")
 
-		self._initVisited()
+		if start == end:
+			if self.selfLoop and start in self.graph[start]:
+				self._path = [start, start]
+			else:
+				self._path = []
+			return self._path
 
-		self._path = []
-		try:
-			self._findPath(start, end)
-		except NestedExit:
-			pass
+		match algorithm:
+			case PathAlgs.DEPTH_FIRST_SEARCH:
+				self._initVisited()
+				self._path = []
 
-		# self.path = [start] + self.__findPath0(start, end) ### Slower
+				try:
+					self._findPath_DEPTH_FIRST_SEARCH(start, end)
+				except NestedExit:
+					pass
 
-		return self._path
+				# self.path = [start] + self.__findPath0(start, end) ### Slower
 
-	def _findPath(self, current, end):
+				return self._path
+			case PathAlgs.BREADTH_FIRST_SEARCH:
+				self._initVisited()
+
+				queue = deque([start])
+				enterNode = [None] * self.len
+				while len(queue):
+					current = queue.popleft()
+					for neighbour in self.graph[current]:
+						if self._visited[neighbour]:
+							continue
+						enterNode[neighbour] = current
+						if neighbour == end:
+							break
+						queue.append(neighbour)
+						self._visited[neighbour] = True
+					else: # break did not happened -> end not found -> do not break while loop
+						continue
+					break
+				else: # path was not found
+					self._path = []
+					return self._path
+
+				current = end
+				self._path = deque([])
+				while current != start:
+					self._path.appendleft(current)
+					current = enterNode[current]
+				self._path.appendleft(start)
+
+				self._path = list(self._path)
+				return self._path
+
+	def _findPath_DEPTH_FIRST_SEARCH(self, current, end):
+		""" Helper recursive function """
 		self._visited[current] = True
 		self._path.append(current)
-		for node in self.graph[current]:
+		for node in self.graph[current]: # loop over connected nodes
 			if self._visited[node]:
 				continue
 			if node == end:
 				self._path.append(end)
 				raise NestedExit
 			else:
-				self._findPath(node, end)
-		self._path.pop()
+				self._findPath_DEPTH_FIRST_SEARCH(node, end)
+		self._path.pop() # path was not found so to return empty list we pop the only inserted element
 
 	# def __findPath0(self, current, end): ### Slower
 	# 	self.visited[current] = True
