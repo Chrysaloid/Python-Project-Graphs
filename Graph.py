@@ -43,6 +43,7 @@ class Graph:
 
 	@staticmethod
 	def simpleTraversePath(graph: "Graph", path: list[int]) -> bool:
+		""" Used to check id path is valid """
 		g = graph.graph
 		for i in range(len(path)-1):
 			if path[i+1] not in g[path[i]]:
@@ -59,7 +60,7 @@ class Graph:
 		print("]")
 
 	def _initVisited(self, val=False):
-		# self._visited = [val] * self.len
+		""" Initialize _visited list """
 		if len(self._visited) == self.len:
 			for i in range(self.len):
 				self._visited[i] = val
@@ -267,6 +268,7 @@ class Graph:
 			animate: bool = True,
 			x0: np.ndarray = None,  # initial positions
 	):
+		""" Draw the graph. Can try to find nice arrangement using physical simulation """
 		if not self.graph:
 			raise RuntimeWarning("Can't draw an empty graph")
 
@@ -351,8 +353,6 @@ class Graph:
 					vLen = np.linalg.norm(v, axis=0, keepdims=True)
 					Ff = (v/vLen) * (u*FfFun(vLen/dt))  # u*V
 					np.nan_to_num(Ff, copy=False)
-
-					# print(currentPoint)
 
 					# discretized differential equation to calculate displacement from resultant force
 					x2[:, [j]] = dt**2/m*(Fc + Fs + Ff) + 2*nextPoint - currentPoint
