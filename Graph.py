@@ -1,6 +1,7 @@
 ﻿import random
 import math
 import numpy as np
+import matplotlib
 from collections import deque
 from matplotlib import pyplot as plt
 from time import time
@@ -12,6 +13,7 @@ from PchipInterpolatorClip import PchipInterpolatorClip
 from PathFindingAlgorithms import PathFindingAlgorithms as PathAlgs
 
 plt.style.use("dark_background")
+matplotlib.use("qtagg")
 
 class	Graph:
 	def __init__(self, graph: list | int = []):
