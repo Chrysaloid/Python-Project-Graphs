@@ -261,6 +261,7 @@ class	Graph:
 		self._path.pop() # path was not found so to return empty list we pop the only inserted element
 
 	matlabBlue = (0.000,0.447,0.741)
+	matlabOrange = (0.850,0.325,0.098)
 	FcFunBase = PchipInterpolatorClip([0.2592,1.158,1.73,2.302,3.142,4.491], [-4,-3.682,-1.734,-0.8572,-0.3178,0.1204])
 	FsFunBase = PchipInterpolatorClip([0,0.3768,1,1.667,2,3,4,5], [-1,-0.3358,0,0.3416,1,2,3,4])
 	FfFunBase = interp1d([0,0.5,1,1.5,2], [0,0.5,1.5,2.5,4], kind="linear", fill_value="extrapolate", copy=False)
@@ -275,7 +276,7 @@ class	Graph:
 		FcFun: Callable = FcFunBase, # Coulomb's force
 		FsFun: Callable = FsFunBase, # spring force
 		FfFun: Callable = FfFunBase, # friction force
-		maxSpeedThreshold: float = 0.001,
+		maxSpeedThreshold: float = 0.005,
 		maxI: float = 1e4,
 		logSpeed: bool = True,
 		logSpeedInter: float = 0.1, # s
@@ -291,12 +292,13 @@ class	Graph:
 			for node in self.graph[i]:
 				if i != node:
 					edges.add(frozenset((i,node)))
-		# edges = list(edges)
 		edges = np.array([list(x) for x in edges])
-		# print(edges)
+
+		graph = self.graph
+		if not self.multiEdge:
+			graph = list(map(list, graph))
 
 		fig, ax = plt.subplots(tight_layout=True)
-		# plt.xticks([]), plt.yticks([])
 		ax.set_aspect("equal", adjustable="box")
 		setFigPos("x: 201	y: 75	w: 3625	h: 2070")
 		plt.get_current_fig_manager().window.showMaximized()
@@ -308,9 +310,9 @@ class	Graph:
 		z0 = np.zeros((2,self.len))
 		xdata = np.stack((z0[0,edges[:,0]], z0[0,edges[:,1]]), axis=0)
 		ydata = np.stack((z0[1,edges[:,0]], z0[1,edges[:,1]]), axis=0)
-		p1 = plt.plot(xdata,ydata, color=self.matlabBlue)
+		p1 = plt.plot(xdata,ydata, color=self.matlabBlue) # edges
 		z1 = np.zeros(self.len)
-		p2 = plt.plot(z1, z1, color=self.matlabBlue, linestyle="none", marker=".", markersize=12)[0]
+		p2 = plt.plot(z1, z1, color=self.matlabOrange, linestyle="none", marker=".", markersize=12)[0] # nodes
 
 		plt.show(block=False)
 
@@ -336,7 +338,6 @@ class	Graph:
 			ax.relim()
 			ax.autoscale_view()
 			fig.canvas.draw()
-			# plt.pause(0.01)
 			fig.canvas.flush_events()
 
 		if simulate:
@@ -358,7 +359,7 @@ class	Graph:
 					Fc = q*np.nansum((rj/rjLen) * FcFun(rjLen), axis=1, keepdims=True) # q/r^2
 
 					# spring force
-					rl = x0[:, self.graph[j]] - currentPoint
+					rl = x0[:, graph[j]] - currentPoint
 					rlLen = np.linalg.norm(rl, axis=0, keepdims=True)
 					Fs = k*np.nansum((rl/rlLen) * FsFun(rlLen), axis=1, keepdims=True) # k*(r - r0)
 
