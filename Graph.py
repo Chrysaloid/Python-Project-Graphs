@@ -15,15 +15,16 @@ from PathFindingAlgorithms import PathFindingAlgorithms as PathAlgs
 plt.style.use("dark_background")
 matplotlib.use("qtagg")
 
-class	Graph:
+
+class Graph:
 	def __init__(self, graph: list | int = []):
 		self.graph = []
 		# self.edges = []
 
 		self._visited = []
 
-		self.multiEdge   = False
-		self.selfLoop    = False
+		self.multiEdge = False
+		self.selfLoop = False
 		self.directional = False
 
 		if isinstance(graph, int):
@@ -57,7 +58,7 @@ class	Graph:
 			print(" {i:{field_size}}: {neighbourhood}".format(i=i, field_size=field_size, neighbourhood=" ".join(map(str, self.graph[i]))))
 		print("]")
 
-	def _initVisited(self, val = False):
+	def _initVisited(self, val=False):
 		# self._visited = [val] * self.len
 		if len(self._visited) == self.len:
 			for i in range(self.len):
@@ -71,7 +72,7 @@ class	Graph:
 			return False
 
 		if self.directional:
-			for neighbourhood in self.graph: # check for isolated nodes == with no neighbours
+			for neighbourhood in self.graph:  # check for isolated nodes == with no neighbours
 				if not neighbourhood:
 					return False
 
@@ -98,38 +99,17 @@ class	Graph:
 
 		return all(self._visited)
 
-	"""
-	def isConnected(self):
-		if not self.graph:
-			return True
-
-		self._initVisited()
-		# start = random.randrange(self.len)
-		start = 0
-		self._isConnected(start)
-
-		return all(self._visited)
-
-	def _isConnected(self, current):
-		self._visited[current] = True
-		for node in self.graph[current]:
-			if self._visited[node]:
-				continue
-			else:
-				self._isConnected(node)
-	"""
-
 	def generateRandomGraph(
-			self,
-			numNodes = 10,
-			makeConnected = True,
-			maxConnections: int | tuple[int, int] = None,
-			multiEdge = False,
-			selfLoop = False,
-			directional = False,
-		):
-		self.multiEdge   = multiEdge
-		self.selfLoop    = selfLoop
+		self,
+		numNodes=10,
+		makeConnected=True,
+		maxConnections: int | tuple[int, int] = None,
+		multiEdge=False,
+		selfLoop=False,
+		directional=False,
+	):
+		self.multiEdge = multiEdge
+		self.selfLoop = selfLoop
 		self.directional = directional
 
 		minConn = 1 if makeConnected else 0
@@ -144,7 +124,7 @@ class	Graph:
 		idxes = range(numNodes)
 		# attempts = 0
 		while True:
-			if multiEdge: # k is the node neighbourhood size
+			if multiEdge:  # k is the node neighbourhood size
 				self.graph = [random.choices(idxes, k=random.randrange(minConn, maxConn)) for i in idxes]
 			else:
 				self.graph = [set(random.sample(idxes, k=random.randrange(minConn, maxConn))) for i in idxes]
@@ -173,21 +153,21 @@ class	Graph:
 
 	PathFindingAlgorithms = PathAlgs
 	def findPath(
-			self,
-			start: int,
-			end: int,
-			algorithm: PathAlgs = PathAlgs.DEPTH_FIRST_SEARCH
-		) -> list[int]:
+		self,
+		start: int,
+		end: int,
+		algorithm: PathAlgs = PathAlgs.DEPTH_FIRST_SEARCH
+	) -> list[int]:
 		"""
 		Finds path between @start and @end nodes using specified algorithm.
 		If path is not found - empty list is returned.
 
 		args:
-			start (int): Start node
-			end (int): End node
+				start (int): Start node
+				end (int): End node
 
 		return:
-			Path as list of node indices.
+				Path as list of node indices.
 		"""
 		if not isinstance(start, int):
 			raise TypeError("start should be an int.")
@@ -231,10 +211,10 @@ class	Graph:
 							break
 						queue.append(neighbour)
 						self._visited[neighbour] = True
-					else: # break did not happened -> end not found -> do not break while loop
+					else:  # break did not happened -> end not found -> do not break while loop
 						continue
 					break
-				else: # path was not found
+				else:  # path was not found
 					self._path = []
 					return self._path
 
@@ -252,7 +232,7 @@ class	Graph:
 		""" Helper recursive function """
 		self._visited[current] = True
 		self._path.append(current)
-		for node in self.graph[current]: # loop over connected nodes
+		for node in self.graph[current]:  # loop over connected nodes
 			if self._visited[node]:
 				continue
 			if node == end:
@@ -260,31 +240,32 @@ class	Graph:
 				raise NestedExit
 			else:
 				self._findPath_DEPTH_FIRST_SEARCH(node, end)
-		self._path.pop() # path was not found so to return empty list we pop the only inserted element
+		# path was not found so to return empty list we pop the inserted element
+		self._path.pop()
 
-	matlabBlue = (0.000,0.447,0.741)
-	matlabOrange = (0.850,0.325,0.098)
-	FcFunBase = PchipInterpolatorClip([0.2592,1.158,1.73,2.302,3.142,4.491], [-4,-3.682,-1.734,-0.8572,-0.3178,0.1204])
-	FsFunBase = PchipInterpolatorClip([0,0.3768,1,1.667,2,3,4,5], [-1,-0.3358,0,0.3416,1,2,3,4])
-	FfFunBase = interp1d([0,0.5,1,1.5,2], [0,0.5,1.5,2.5,4], kind="linear", fill_value="extrapolate", copy=False)
+	matlabBlue = (0.000, 0.447, 0.741)
+	matlabOrange = (0.850, 0.325, 0.098)
+	FcFunBase = PchipInterpolatorClip([0.2592, 1.158, 1.73, 2.302, 3.142, 4.491], [-4, -3.682, -1.734, -0.8572, -0.3178, 0.1204])
+	FsFunBase = PchipInterpolatorClip([0, 0.3768, 1, 1.667, 2, 3, 4, 5], [-1, -0.3358, 0, 0.3416, 1, 2, 3, 4])
+	FfFunBase = interp1d([0, 0.5, 1, 1.5, 2], [0, 0.5, 1.5, 2.5, 4], kind="linear", fill_value="extrapolate", copy=False)
 	def draw(
-		self,
-		simulate: bool = True, # distribute nodes with a simulation
-		q: float = 1.0, # Coulomb's coefficient
-		k: float = 3.0, # coefficient of spring force
-		u: float = -1.0, # coefficient of friction force
-		m: float = 1.0, # node mass
-		dt: float = 1e-2, # time delta of simulation
-		FcFun: Callable = FcFunBase, # Coulomb's force
-		FsFun: Callable = FsFunBase, # spring force
-		FfFun: Callable = FfFunBase, # friction force
-		maxSpeedThreshold: float = 0.005,
-		maxI: float = 1e4,
-		logSpeed: bool = True,
-		logSpeedInter: float = 0.1, # s
-		unitSquarePerc: float = 0.9,
-		animate: bool = True,
-		x0: np.ndarray = None, # initial positions
+			self,
+			simulate: bool = True,  # distribute nodes with a simulation
+			q: float = 1.0,  # Coulomb's coefficient
+			k: float = 3.0,  # coefficient of spring force
+			u: float = -1.0,  # coefficient of friction force
+			m: float = 1.0,  # node mass
+			dt: float = 1e-2,  # time delta of simulation
+			FcFun: Callable = FcFunBase,  # Coulomb's force
+			FsFun: Callable = FsFunBase,  # spring force
+			FfFun: Callable = FfFunBase,  # friction force
+			maxSpeedThreshold: float = 0.005,
+			maxI: float = 1e4,
+			logSpeed: bool = True,
+			logSpeedInter: float = 0.1,  # s
+			unitSquarePerc: float = 0.9,
+			animate: bool = True,
+			x0: np.ndarray = None,  # initial positions
 	):
 		if not self.graph:
 			raise RuntimeWarning("Can't draw an empty graph")
@@ -293,7 +274,7 @@ class	Graph:
 		for i in range(self.len):
 			for node in self.graph[i]:
 				if i != node:
-					edges.add(frozenset((i,node)))
+					edges.add(frozenset((i, node)))
 		edges = np.array([list(x) for x in edges])
 
 		graph = self.graph
@@ -309,12 +290,12 @@ class	Graph:
 		fig.canvas.draw()
 		fig.canvas.flush_events()
 
-		z0 = np.zeros((2,self.len))
-		xdata = np.stack((z0[0,edges[:,0]], z0[0,edges[:,1]]), axis=0)
-		ydata = np.stack((z0[1,edges[:,0]], z0[1,edges[:,1]]), axis=0)
-		p1 = plt.plot(xdata,ydata, color=self.matlabBlue) # edges
+		z0 = np.zeros((2, self.len))
+		xdata = np.stack((z0[0, edges[:, 0]], z0[0, edges[:, 1]]), axis=0)
+		ydata = np.stack((z0[1, edges[:, 0]], z0[1, edges[:, 1]]), axis=0)
+		p1 = plt.plot(xdata, ydata, color=self.matlabBlue)  # edges
 		z1 = np.zeros(self.len)
-		p2 = plt.plot(z1, z1, color=self.matlabOrange, linestyle="none", marker=".", markersize=12)[0] # nodes
+		p2 = plt.plot(z1, z1, color=self.matlabOrange, linestyle="none", marker=".", markersize=12)[0]  # nodes
 
 		plt.show(block=False)
 
@@ -330,13 +311,13 @@ class	Graph:
 			transformToUnitSquarePadded(x0, unitSquarePerc)
 
 		def draw_helper(x):
-			xdata = np.stack((x[0,edges[:,0]], x[0,edges[:,1]]), axis=0)
-			ydata = np.stack((x[1,edges[:,0]], x[1,edges[:,1]]), axis=0)
+			xdata = np.stack((x[0, edges[:, 0]], x[0, edges[:, 1]]), axis=0)
+			ydata = np.stack((x[1, edges[:, 0]], x[1, edges[:, 1]]), axis=0)
 			for j in range(edges.shape[0]):
-				p1[j].set_xdata(xdata[:,j])
-				p1[j].set_ydata(ydata[:,j])
-			p2.set_xdata(x[0,:])
-			p2.set_ydata(x[1,:])
+				p1[j].set_xdata(xdata[:, j])
+				p1[j].set_ydata(ydata[:, j])
+			p2.set_xdata(x[0, :])
+			p2.set_ydata(x[1, :])
 			ax.relim()
 			ax.autoscale_view()
 			fig.canvas.draw()
@@ -352,30 +333,29 @@ class	Graph:
 			t0 = time()
 			while maxSpeed > maxSpeedThreshold and i < maxI:
 				for j in range(self.len):
-					currentPoint = x0[:,[j]]
-					nextPoint = x1[:,[j]]
+					currentPoint = x0[:, [j]]
+					nextPoint = x1[:, [j]]
 
 					# Coulomb's force
 					rj = x0 - currentPoint
 					rjLen = np.linalg.norm(rj, axis=0, keepdims=True)
-					Fc = q*np.nansum((rj/rjLen) * FcFun(rjLen), axis=1, keepdims=True) # q/r^2
+					Fc = q*np.nansum((rj/rjLen) * FcFun(rjLen), axis=1, keepdims=True)  # q/r^2
 
 					# spring force
 					rl = x0[:, graph[j]] - currentPoint
 					rlLen = np.linalg.norm(rl, axis=0, keepdims=True)
-					Fs = k*np.nansum((rl/rlLen) * FsFun(rlLen), axis=1, keepdims=True) # k*(r - r0)
+					Fs = k*np.nansum((rl/rlLen) * FsFun(rlLen), axis=1, keepdims=True)  # k*(r - r0)
 
 					# friction force
-					v = nextPoint - currentPoint # velocity
+					v = nextPoint - currentPoint  # velocity
 					vLen = np.linalg.norm(v, axis=0, keepdims=True)
-					Ff = (v/vLen) * (u*FfFun(vLen/dt)) # u*V
-					if Ff is np.nan: Ff = 0
+					Ff = (v/vLen) * (u*FfFun(vLen/dt))  # u*V
 					np.nan_to_num(Ff, copy=False)
 
 					# print(currentPoint)
 
 					# discretized differential equation to calculate displacement from resultant force
-					x2[:,[j]] = dt**2/m*(Fc + Fs + Ff) + 2*nextPoint - currentPoint
+					x2[:, [j]] = dt**2/m*(Fc + Fs + Ff) + 2*nextPoint - currentPoint
 
 				if animate:
 					draw_helper(x2)
@@ -386,7 +366,7 @@ class	Graph:
 				x0, x1, x2 = x1, x2, x0
 
 				maxSpeed = max(np.linalg.norm(x1 - x0, axis=1)) / dt
-				if logSpeed and czas - poprzCzas > logSpeedInter: # s
+				if logSpeed and czas - poprzCzas > logSpeedInter:  # s
 					print(f"{i: 6d} | Max speed: {maxSpeed:.4f}")
 					poprzCzas = czas
 
@@ -395,8 +375,6 @@ class	Graph:
 
 			if not animate:
 				draw_helper(x2)
-
-			# x2 = transformToUnitSquarePadded(x2,unitSquarePerc)
 		else:
 			draw_helper(x0)
 

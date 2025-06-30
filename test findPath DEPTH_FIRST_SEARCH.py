@@ -1,7 +1,7 @@
 ﻿import random
 from Graph import Graph
-# import sys
-# sys.setrecursionlimit(1500)
+
+# random.seed(0)
 
 graph = Graph([[0]])
 graph.generateRandomGraph(20, maxConnections=(2,6))
