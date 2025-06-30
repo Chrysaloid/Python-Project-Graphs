@@ -5,6 +5,7 @@ from PchipInterpolatorClip import PchipInterpolatorClip
 from scipy.interpolate import PchipInterpolator, interp1d
 
 plt.style.use("dark_background")
+matlabBlue = (0.000,0.447,0.741)
 
 fig, ax = plt.subplots(tight_layout=True)
 
@@ -17,10 +18,12 @@ x = np.linspace(-1, 4, 100)
 # y = func(np.clip(x, 0, 3))
 y = func(x)
 
-plt.plot(x,y)
-
 setFigPos("x: 201	y: 75	w: 3625	h: 2070")
 plt.get_current_fig_manager().window.showMaximized()
 fig.canvas.mpl_connect("key_press_event", close_figure)
 fig.canvas.toolbar.zoom()
-plt.show()
+plt.show(block=False)
+
+plt.plot(x,y, color=matlabBlue, linestyle="none", marker=".", markersize=12)
+
+plt.show(block=True)

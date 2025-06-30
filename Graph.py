@@ -7,14 +7,16 @@ from time import time
 from scipy.interpolate import interp1d
 from collections.abc import Callable
 
-from utils import NestedExit, close_figure, setFigPos
+from utils import NestedExit, close_figure, setFigPos, transformToUnitSquarePadded
 from PchipInterpolatorClip import PchipInterpolatorClip
 from PathFindingAlgorithms import PathFindingAlgorithms as PathAlgs
+
+plt.style.use("dark_background")
 
 class	Graph:
 	def __init__(self, graph: list | int = []):
 		self.graph = []
-		self.edges = []
+		# self.edges = []
 
 		self._visited = []
 
@@ -258,31 +260,7 @@ class	Graph:
 				self._findPath_DEPTH_FIRST_SEARCH(node, end)
 		self._path.pop() # path was not found so to return empty list we pop the only inserted element
 
-	def calculateEdges(self):
-		self.edges = []
-
-		if not self.graph:
-			return self.edges
-
-		if self.directional:
-			for i in range(self.len):
-				for node in self.graph[i]:
-					self.edges.append((i,node))
-		else:
-			if self.multiEdge:
-				pass
-				# for i in range(self.len):
-				# 	for node in self.graph[i]:
-				# 		self.edges.append((i,node))
-			else:
-				self.edges = set()
-				for i in range(self.len):
-					for node in self.graph[i]: # (set(self.graph[i]) if self.multiEdge else self.graph[i])
-						self.edges.add(frozenset((i,node)))
-				self.edges = list(self.edges)
-
-		return self.edges
-
+	matlabBlue = (0.000,0.447,0.741)
 	FcFunBase = PchipInterpolatorClip([0, 1, 2, 3], [2, 1, 4, 5])
 	FsFunBase = PchipInterpolatorClip([0, 1, 2, 3], [2, 1, 4, 5])
 	FfFunBase = interp1d([0, 1, 2, 3], [2, 1, 4, 5], kind="linear", fill_value="extrapolate", copy=False)
@@ -305,23 +283,59 @@ class	Graph:
 		animate: bool = True,
 		x0: np.ndarray = None, # initial positions
 	):
-		if self.directional:
-			pass
-		if self.multiEdge:
-			pass
-		if self.selfLoop:
-			pass
+		if not self.graph:
+			raise RuntimeWarning("Can't draw an empty graph")
+
+		edges = set()
+		for i in range(self.len):
+			for node in self.graph[i]:
+				if i != node:
+					edges.add(frozenset((i,node)))
+		# edges = list(edges)
+		edges = np.array([list(x) for x in edges])
+		# print(edges)
+
+		fig, ax = plt.subplots(tight_layout=True)
+		# plt.xticks([]), plt.yticks([])
+		ax.set_aspect("equal", adjustable="box")
+		setFigPos("x: 201	y: 75	w: 3625	h: 2070")
+		plt.get_current_fig_manager().window.showMaximized()
+		fig.canvas.mpl_connect("key_press_event", close_figure)
+		fig.canvas.toolbar.zoom()
+
+		z0 = np.zeros((2,self.len))
+		xdata = np.stack((z0[0,edges[:,0]], z0[0,edges[:,1]]), axis=0)
+		ydata = np.stack((z0[1,edges[:,0]], z0[1,edges[:,1]]), axis=0)
+		p1 = plt.plot(xdata,ydata, color=self.matlabBlue)
+		z1 = np.zeros(self.len)
+		p2 = plt.plot(z1, z1, color=self.matlabBlue, linestyle="none", marker=".", markersize=12)[0]
+
+		plt.show(block=False)
+
+		if x0 is None:
+			x0 = np.random.rand((2, self.len)) * 0.4
+		elif type(x0) is not np.ndarray:
+			raise ValueError("x0 should be np.ndarray")
+		elif x0.ndim != 2:
+			raise ValueError("x0 should be 2D")
+		elif x0.shape[0] != 2 or x0.shape[1] != self.len:
+			raise ValueError("x0's shape should be 2 x self.len")
+		else:
+			transformToUnitSquarePadded(x0, unitSquarePerc)
+
+		def draw_helper(x):
+			xdata = np.stack((x[0,edges[:,0]], x[0,edges[:,1]]), axis=0)
+			ydata = np.stack((x[1,edges[:,0]], x[1,edges[:,1]]), axis=0)
+			for j in range(edges.shape[0]):
+				p1[j].set_xdata(xdata[:,j])
+				p1[j].set_ydata(ydata[:,j])
+			p2.set_xdata(x[0,:])
+			p2.set_ydata(x[1,:])
+			ax.relim()
+			ax.autoscale_view()
+			fig.canvas.draw_idle()
 
 		if simulate:
-			if x0 is None:
-				x0 = np.random.rand((self.len, 2)) * 0.4
-			elif x0 is not np.ndarray:
-				raise ValueError("x0 should be np.ndarray")
-			elif x0.ndim != 2:
-				raise ValueError("x0 should be 2D")
-			elif x0.shape[0] != self.len or x0.shape[1] != 2:
-				raise ValueError("x0 should be self.len x 2")
-
 			x1 = x0.copy()
 			x2 = x0.copy()
 
@@ -331,40 +345,32 @@ class	Graph:
 			t0 = time()
 			while maxSpeed > maxSpeedThreshold and i < maxI:
 				for j in range(self.len):
-					currentPoint = x0[j,:]
+					currentPoint = x0[:,j]
 
 					# Coulomb's force
 					rj = x0 - currentPoint
-					rjLen = np.linalg.norm(rj)
+					rjLen = np.linalg.norm(rj, axis=0)
 					Fc = q*np.nansum((rj/rjLen) * FcFun(rjLen)) # q/r^2
 
 					# spring force
-					rl = x0[self.graph[j],:] - currentPoint
-					rlLen = np.linalg.norm(rl)
+					rl = x0[:, self.graph[j]] - currentPoint
+					rlLen = np.linalg.norm(rl, axis=0)
 					Fs = k*np.nansum((rl/rlLen) * FsFun(rlLen)) # k*(r - r0)
 
 					# friction force
-					v = x1[j,:] - currentPoint
-					vLen = np.linalg.norm(v)
+					v = x1[:,j] - currentPoint
+					vLen = np.linalg.norm(v, axis=0)
 					Ff = (v/vLen) * (u*FfFun(vLen/dt)) # u*V
 					if Ff is np.nan: Ff = 0
 
 					# discretized differential equation to calculate displacement from resultant force
-					x2[j,:] = dt^2/m*(Fc + Fs + Ff) + 2*x1[j,:] - currentPoint
+					x2[:,j] = dt^2/m*(Fc + Fs + Ff) + 2*x1[:,j] - currentPoint
 
 				if animate:
-					pass
+					draw_helper(x2)
 
 				czas = time() - t0
 				i += 1
-
-				# x0 = x1.copy()
-				# x1 = x2.copy()
-
-				# temp = x0
-				# x0 = x1
-				# x1 = x2
-				# x2 = temp
 
 				x0, x1, x2 = x1, x2, x0
 
@@ -375,6 +381,8 @@ class	Graph:
 
 			print(f"{i:06d} | Max speed: {maxSpeed:.4f}")
 
-			x2 = transformToUnitSquarePadded(x2,unitSquarePerc)
+			# x2 = transformToUnitSquarePadded(x2,unitSquarePerc)
+		else:
+			draw_helper(x0)
 
-		pass
+		plt.show(block=True)
