@@ -261,9 +261,9 @@ class	Graph:
 		self._path.pop() # path was not found so to return empty list we pop the only inserted element
 
 	matlabBlue = (0.000,0.447,0.741)
-	FcFunBase = PchipInterpolatorClip([0, 1, 2, 3], [2, 1, 4, 5])
-	FsFunBase = PchipInterpolatorClip([0, 1, 2, 3], [2, 1, 4, 5])
-	FfFunBase = interp1d([0, 1, 2, 3], [2, 1, 4, 5], kind="linear", fill_value="extrapolate", copy=False)
+	FcFunBase = PchipInterpolatorClip([0.2592,1.158,1.73,2.302,3.142,4.491], [-4,-3.682,-1.734,-0.8572,-0.3178,0.1204])
+	FsFunBase = PchipInterpolatorClip([0,0.3768,1,1.667,2,3,4,5], [-1,-0.3358,0,0.3416,1,2,3,4])
+	FfFunBase = interp1d([0,0.5,1,1.5,2], [0,0.5,1.5,2.5,4], kind="linear", fill_value="extrapolate", copy=False)
 	def draw(
 		self,
 		simulate: bool = True, # distribute nodes with a simulation
@@ -302,6 +302,8 @@ class	Graph:
 		plt.get_current_fig_manager().window.showMaximized()
 		fig.canvas.mpl_connect("key_press_event", close_figure)
 		fig.canvas.toolbar.zoom()
+		fig.canvas.draw()
+		fig.canvas.flush_events()
 
 		z0 = np.zeros((2,self.len))
 		xdata = np.stack((z0[0,edges[:,0]], z0[0,edges[:,1]]), axis=0)
@@ -313,7 +315,7 @@ class	Graph:
 		plt.show(block=False)
 
 		if x0 is None:
-			x0 = np.random.rand((2, self.len)) * 0.4
+			x0 = np.random.rand(2, self.len) * (self.len * 10/27)
 		elif type(x0) is not np.ndarray:
 			raise ValueError("x0 should be np.ndarray")
 		elif x0.ndim != 2:
@@ -333,7 +335,9 @@ class	Graph:
 			p2.set_ydata(x[1,:])
 			ax.relim()
 			ax.autoscale_view()
-			fig.canvas.draw_idle()
+			fig.canvas.draw()
+			# plt.pause(0.01)
+			fig.canvas.flush_events()
 
 		if simulate:
 			x1 = x0.copy()
@@ -345,26 +349,30 @@ class	Graph:
 			t0 = time()
 			while maxSpeed > maxSpeedThreshold and i < maxI:
 				for j in range(self.len):
-					currentPoint = x0[:,j]
+					currentPoint = x0[:,[j]]
+					nextPoint = x1[:,[j]]
 
 					# Coulomb's force
 					rj = x0 - currentPoint
-					rjLen = np.linalg.norm(rj, axis=0)
-					Fc = q*np.nansum((rj/rjLen) * FcFun(rjLen)) # q/r^2
+					rjLen = np.linalg.norm(rj, axis=0, keepdims=True)
+					Fc = q*np.nansum((rj/rjLen) * FcFun(rjLen), axis=1, keepdims=True) # q/r^2
 
 					# spring force
 					rl = x0[:, self.graph[j]] - currentPoint
-					rlLen = np.linalg.norm(rl, axis=0)
-					Fs = k*np.nansum((rl/rlLen) * FsFun(rlLen)) # k*(r - r0)
+					rlLen = np.linalg.norm(rl, axis=0, keepdims=True)
+					Fs = k*np.nansum((rl/rlLen) * FsFun(rlLen), axis=1, keepdims=True) # k*(r - r0)
 
 					# friction force
-					v = x1[:,j] - currentPoint
-					vLen = np.linalg.norm(v, axis=0)
+					v = nextPoint - currentPoint # velocity
+					vLen = np.linalg.norm(v, axis=0, keepdims=True)
 					Ff = (v/vLen) * (u*FfFun(vLen/dt)) # u*V
 					if Ff is np.nan: Ff = 0
+					np.nan_to_num(Ff, copy=False)
+
+					# print(currentPoint)
 
 					# discretized differential equation to calculate displacement from resultant force
-					x2[:,j] = dt^2/m*(Fc + Fs + Ff) + 2*x1[:,j] - currentPoint
+					x2[:,[j]] = dt**2/m*(Fc + Fs + Ff) + 2*nextPoint - currentPoint
 
 				if animate:
 					draw_helper(x2)
@@ -376,10 +384,14 @@ class	Graph:
 
 				maxSpeed = max(np.linalg.norm(x1 - x0, axis=1)) / dt
 				if logSpeed and czas - poprzCzas > logSpeedInter: # s
-					print(f"{i:06d} | Max speed: {maxSpeed:.4f}")
+					print(f"{i: 6d} | Max speed: {maxSpeed:.4f}")
 					poprzCzas = czas
 
-			print(f"{i:06d} | Max speed: {maxSpeed:.4f}")
+			print(f"{i: 6d} | Max speed: {maxSpeed:.4f}")
+			print("Done")
+
+			if not animate:
+				draw_helper(x2)
 
 			# x2 = transformToUnitSquarePadded(x2,unitSquarePerc)
 		else:

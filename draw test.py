@@ -17,18 +17,12 @@ nazwy = [
 	"Losowy 1.json"    , # 10
 ]
 
-with open("Przykładowe grafy/" + nazwy[8]) as f:
+with open("Przykładowe grafy/" + nazwy[5]) as f:
 	d = json.load(f)
-	# print(d)
 
-graph = Graph((np.array(d["nodes"])-1).tolist())
+# graph = Graph((np.array(d["nodes"])-1).tolist())
+graph = Graph([[i-1 for i in nodes] for nodes in d["nodes"]])
 # graph.generateRandomGraph(20, maxConnections=10)
 
-# print(np.array(d["edges"]))
-# print(np.array(d["edges"])-1)
-
-# print((np.array(d["nodes"])-1).tolist())
-
-# print(np.array(d["x"]))
-
-graph.draw(x0=np.array(d["x"], dtype="float64").transpose(), simulate=False)
+# graph.draw(x0=np.array(d["x"], dtype="float64").transpose(), simulate=False)
+graph.draw(animate=1, logSpeedInter=0.2)
